@@ -1,17 +1,17 @@
+import { type Prisma, type Program } from "@prisma/client";
 import { z } from "zod";
-import { createCrudRouter } from "../../lib/crud.js";
-import { type Entity, MemoryStore } from "../../lib/store.js";
+import { createCrudRouter, type Repo } from "../../lib/crud.js";
+import { prisma } from "../../lib/prisma.js";
 
-export type Program = Entity & {
-  name: string;
-  description?: string;
-  commissionType: "percentage" | "fixed";
-  commissionValue: number;
-  cookieDays: number;
-  status: "active" | "paused" | "archived";
+const repo: Repo<Program, Prisma.ProgramCreateInput> = {
+  list: () => prisma.program.findMany({ orderBy: { createdAt: "asc" } }),
+  findById: (id) => prisma.program.findUnique({ where: { id } }),
+  create: (data) => prisma.program.create({ data }),
+  update: (id, data) => prisma.program.update({ where: { id }, data }),
+  remove: async (id) => {
+    await prisma.program.delete({ where: { id } });
+  },
 };
-
-export const programs = new MemoryStore<Program>();
 
 const schema = z.object({
   name: z.string().min(1),
@@ -22,4 +22,4 @@ const schema = z.object({
   status: z.enum(["active", "paused", "archived"]).default("active"),
 });
 
-export const programsRouter = createCrudRouter(programs, schema, "Program");
+export const programsRouter = createCrudRouter(repo, schema, "Program");

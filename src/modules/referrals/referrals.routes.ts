@@ -1,14 +1,17 @@
+import { type Prisma, type Referral } from "@prisma/client";
 import { z } from "zod";
-import { createCrudRouter } from "../../lib/crud.js";
-import { type Entity, MemoryStore } from "../../lib/store.js";
+import { createCrudRouter, type Repo } from "../../lib/crud.js";
+import { prisma } from "../../lib/prisma.js";
 
-export type Referral = Entity & {
-  partnerId: string;
-  customerEmail: string;
-  status: "lead" | "customer" | "cancelled";
+const repo: Repo<Referral, Prisma.ReferralUncheckedCreateInput> = {
+  list: () => prisma.referral.findMany({ orderBy: { createdAt: "asc" } }),
+  findById: (id) => prisma.referral.findUnique({ where: { id } }),
+  create: (data) => prisma.referral.create({ data }),
+  update: (id, data) => prisma.referral.update({ where: { id }, data }),
+  remove: async (id) => {
+    await prisma.referral.delete({ where: { id } });
+  },
 };
-
-export const referrals = new MemoryStore<Referral>();
 
 const schema = z.object({
   partnerId: z.string(),
@@ -16,4 +19,4 @@ const schema = z.object({
   status: z.enum(["lead", "customer", "cancelled"]).default("lead"),
 });
 
-export const referralsRouter = createCrudRouter(referrals, schema, "Referral");
+export const referralsRouter = createCrudRouter(repo, schema, "Referral");

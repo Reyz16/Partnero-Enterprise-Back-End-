@@ -1,16 +1,17 @@
+import { type Partner, type Prisma } from "@prisma/client";
 import { z } from "zod";
-import { createCrudRouter } from "../../lib/crud.js";
-import { type Entity, MemoryStore } from "../../lib/store.js";
+import { createCrudRouter, type Repo } from "../../lib/crud.js";
+import { prisma } from "../../lib/prisma.js";
 
-export type Partner = Entity & {
-  name: string;
-  email: string;
-  referralCode: string;
-  programId?: string;
-  status: "pending" | "approved" | "rejected" | "suspended";
+const repo: Repo<Partner, Prisma.PartnerUncheckedCreateInput> = {
+  list: () => prisma.partner.findMany({ orderBy: { createdAt: "asc" } }),
+  findById: (id) => prisma.partner.findUnique({ where: { id } }),
+  create: (data) => prisma.partner.create({ data }),
+  update: (id, data) => prisma.partner.update({ where: { id }, data }),
+  remove: async (id) => {
+    await prisma.partner.delete({ where: { id } });
+  },
 };
-
-export const partners = new MemoryStore<Partner>();
 
 const schema = z.object({
   name: z.string().min(1),
@@ -20,4 +21,4 @@ const schema = z.object({
   status: z.enum(["pending", "approved", "rejected", "suspended"]).default("pending"),
 });
 
-export const partnersRouter = createCrudRouter(partners, schema, "Partner");
+export const partnersRouter = createCrudRouter(repo, schema, "Partner");

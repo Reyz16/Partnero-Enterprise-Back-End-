@@ -1,16 +1,17 @@
+import { type Payout, type Prisma } from "@prisma/client";
 import { z } from "zod";
-import { createCrudRouter } from "../../lib/crud.js";
-import { type Entity, MemoryStore } from "../../lib/store.js";
+import { createCrudRouter, type Repo } from "../../lib/crud.js";
+import { prisma } from "../../lib/prisma.js";
 
-export type Payout = Entity & {
-  partnerId: string;
-  amount: number;
-  currency: string;
-  method: "bank_transfer" | "paypal" | "other";
-  status: "pending" | "processing" | "completed" | "failed";
+const repo: Repo<Payout, Prisma.PayoutUncheckedCreateInput> = {
+  list: () => prisma.payout.findMany({ orderBy: { createdAt: "asc" } }),
+  findById: (id) => prisma.payout.findUnique({ where: { id } }),
+  create: (data) => prisma.payout.create({ data }),
+  update: (id, data) => prisma.payout.update({ where: { id }, data }),
+  remove: async (id) => {
+    await prisma.payout.delete({ where: { id } });
+  },
 };
-
-export const payouts = new MemoryStore<Payout>();
 
 const schema = z.object({
   partnerId: z.string(),
@@ -20,4 +21,4 @@ const schema = z.object({
   status: z.enum(["pending", "processing", "completed", "failed"]).default("pending"),
 });
 
-export const payoutsRouter = createCrudRouter(payouts, schema, "Payout");
+export const payoutsRouter = createCrudRouter(repo, schema, "Payout");

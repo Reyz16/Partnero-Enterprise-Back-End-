@@ -1,16 +1,17 @@
+import { type Commission, type Prisma } from "@prisma/client";
 import { z } from "zod";
-import { createCrudRouter } from "../../lib/crud.js";
-import { type Entity, MemoryStore } from "../../lib/store.js";
+import { createCrudRouter, type Repo } from "../../lib/crud.js";
+import { prisma } from "../../lib/prisma.js";
 
-export type Commission = Entity & {
-  partnerId: string;
-  referralId?: string;
-  amount: number;
-  currency: string;
-  status: "pending" | "approved" | "paid" | "rejected";
+const repo: Repo<Commission, Prisma.CommissionUncheckedCreateInput> = {
+  list: () => prisma.commission.findMany({ orderBy: { createdAt: "asc" } }),
+  findById: (id) => prisma.commission.findUnique({ where: { id } }),
+  create: (data) => prisma.commission.create({ data }),
+  update: (id, data) => prisma.commission.update({ where: { id }, data }),
+  remove: async (id) => {
+    await prisma.commission.delete({ where: { id } });
+  },
 };
-
-export const commissions = new MemoryStore<Commission>();
 
 const schema = z.object({
   partnerId: z.string(),
@@ -20,4 +21,4 @@ const schema = z.object({
   status: z.enum(["pending", "approved", "paid", "rejected"]).default("pending"),
 });
 
-export const commissionsRouter = createCrudRouter(commissions, schema, "Commission");
+export const commissionsRouter = createCrudRouter(repo, schema, "Commission");
