@@ -5,9 +5,11 @@ import { HttpError } from "../lib/errors.js";
 
 export type AuthUser = { sub: string; email: string; role: "admin" | "manager" };
 
-declare module "express-serve-static-core" {
-  interface Request {
-    user?: AuthUser;
+declare global {
+  namespace Express {
+    interface Request {
+      user?: AuthUser;
+    }
   }
 }
 
